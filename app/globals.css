@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 7%;
+  --foreground: 0 0% 98%;
+
+  --card: 0 0% 10%;
+  --card-foreground: 0 0% 98%;
+
+  --popover: 0 0% 10%;
+  --popover-foreground: 0 0% 98%;
+
+  /* Updated primary color to match disclosure.cy purple-pink */
+  --primary: 325 80% 45%;
+  --primary-foreground: 0 0% 98%;
+
+  --secondary: 325 80% 35%;
+  --secondary-foreground: 0 0% 98%;
+
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 65%;
+
+  --accent: 325 80% 45%;
+  --accent-foreground: 0 0% 98%;
+
+  --destructive: 0 100% 50%;
+  --destructive-foreground: 0 0% 98%;
+
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --ring: 325 80% 45%;
+
+  --radius: 0.5rem;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Updated neon-text class to have white text with purple-pink glow */
+.neon-text {
+  color: white;
+  text-shadow: 0 0 5px hsl(var(--primary) / 0.7), 0 0 10px hsl(var(--primary) / 0.5), 0 0 15px hsl(var(--primary) / 0.3);
+}
+
+/* Special class for tabs */
+.neon-tab {
+  color: white;
+}
+
+.neon-tab[data-state="active"] {
+  text-shadow: 0 0 5px hsl(var(--primary) / 0.7), 0 0 10px hsl(var(--primary) / 0.5), 0 0 15px hsl(var(--primary) / 0.3);
+}
+
+.video-card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.video-card-hover:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px -5px hsl(var(--primary) / 0.3);
+}
+
+/* Add a gradient overlay for featured content */
+.featured-gradient {
+  background: linear-gradient(135deg, hsl(325 80% 45% / 0.1), transparent 50%, hsl(325 80% 45% / 0.1));
+}
+
