@@ -7,10 +7,18 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import playerRegistry from "@/lib/player-registry"
 
 export default function YouTubePlayer({ playerId = "main" }: { playerId?: string }) {
-  const { videoId, setCurrentTime, isPlaying, setIsPlaying, getEstimatedCurrentTime } = useVideo()
+  const { 
+    videoId, 
+    setCurrentTime, 
+    isPlaying, 
+    setIsPlaying, 
+    getEstimatedCurrentTime,
+    hasUserInteracted
+  } = useVideo()
 
   const [error, setError] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const playerInitialized = useRef(false)
 
   // Get the estimated current time
   const estimatedTime = getEstimatedCurrentTime()
@@ -20,17 +28,23 @@ export default function YouTubePlayer({ playerId = "main" }: { playerId?: string
     setError(true)
   }
 
-  // Register the player when it's mounted
+  // This effect handles player registration and cleanup
   useEffect(() => {
-    if (iframeRef.current) {
+    // Only initialize the player if videoId exists and user has interacted
+    // (user interaction is needed for autoplay)
+    if (videoId && iframeRef.current) {
       playerRegistry.registerPlayer(playerId, iframeRef.current)
+      playerInitialized.current = true
     }
 
-    // Clean up when unmounted
+    // Clean up when unmounted or videoId changes
     return () => {
-      playerRegistry.removePlayer(playerId)
+      if (playerInitialized.current) {
+        playerRegistry.removePlayer(playerId)
+        playerInitialized.current = false
+      }
     }
-  }, [playerId])
+  }, [playerId, videoId, hasUserInteracted])
 
   // Set up message listener for YouTube player
   useEffect(() => {
@@ -44,6 +58,8 @@ export default function YouTubePlayer({ playerId = "main" }: { playerId?: string
             setIsPlaying(data.info === 1)
           } else if (data.event === "onCurrentTime") {
             setCurrentTime(data.time)
+            // Also update the time in player registry
+            playerRegistry.updatePlayerTime(playerId, data.time)
           }
         } catch (e) {
           // Not our message, ignore
@@ -55,11 +71,11 @@ export default function YouTubePlayer({ playerId = "main" }: { playerId?: string
 
     // Save current time periodically
     const interval = setInterval(() => {
-      if (iframeRef.current) {
+      if (iframeRef.current && iframeRef.current.contentWindow) {
         try {
           // Get current time from YouTube player
           const message = JSON.stringify({ event: "getCurrentTime" })
-          iframeRef.current.contentWindow?.postMessage(message, "*")
+          iframeRef.current.contentWindow.postMessage(message, "*")
         } catch (e) {
           console.error("Error getting current time:", e)
         }
@@ -70,7 +86,7 @@ export default function YouTubePlayer({ playerId = "main" }: { playerId?: string
       window.removeEventListener("message", handleMessage)
       clearInterval(interval)
     }
-  }, [setCurrentTime, setIsPlaying])
+  }, [setCurrentTime, setIsPlaying, playerId])
 
   if (error) {
     return (
@@ -93,9 +109,11 @@ export default function YouTubePlayer({ playerId = "main" }: { playerId?: string
   }
 
   // Create the iframe src URL with the estimated current time
+  // Add enablejsapi=1 parameter to enable YouTube Player API
+  // Add origin parameter to allow communication between window and iframe
   const iframeSrc = `https://www.youtube.com/embed/${videoId}?start=${Math.floor(
-    estimatedTime,
-  )}&autoplay=1&enablejsapi=1&origin=${typeof window !== "undefined" ? window.location.origin : ""}`
+    estimatedTime
+  )}&enablejsapi=1&origin=${typeof window !== "undefined" ? window.location.origin : ""}&autoplay=${hasUserInteracted ? 1 : 0}`
 
   return (
     <iframe
